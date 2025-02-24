@@ -7,11 +7,31 @@ import base64
 import os
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+ses = boto3.client('ses', region_name='us-east-1')
 user_state_table = dynamodb.Table('UserSearchState')
 yelp_table = dynamodb.Table('yelp-restaurants')
 ES_ENDPOINT = "https://search-restaurants-search-oun4on4o3zee65phdemmgxyb4y.aos.us-east-1.on.aws"
 ES_USERNAME = "saiharshavarma"
 ES_PASSWORD = "ss18851@NYU"
+SENDER_EMAIL = "saiharshavarma.sangaraju@gmail.com" 
+
+def send_email(recipient, subject, body_text):
+    try:
+        response = ses.send_email(
+            Source=SENDER_EMAIL,
+            Destination={
+                "ToAddresses": [recipient]
+            },
+            Message={
+                "Subject": {"Data": subject},
+                "Body": {
+                    "Text": {"Data": body_text}
+                }
+            }
+        )
+        print("Email sent, MessageId:", response.get("MessageId"))
+    except Exception as e:
+        print("Error sending email:", e)
 
 def get_random_restaurant(cuisine):
     query = {
@@ -81,6 +101,8 @@ def lambda_handler(event, context):
     address = details.get("Address", "Address not available")
     rating = details.get("Rating", "N/A")
     review_count = details.get("ReviewCount", "N/A")
+    recommendation2 = f"Based on your last search in {last_location} for {last_cuisine.capitalize()} cuisine, you will be notified via email once I have some restaurant suggestions."
     recommendation = f"Based on your last search in {last_location} for {last_cuisine.capitalize()} cuisine, here's a recommendation: {name}, located at {address}. It has a rating of {rating} based on {review_count} reviews."
     response_payload = {"message": recommendation, "timestamp": datetime.utcnow().isoformat()}
-    return recommendation
+    send_email(user_email, "Restaurant Recommendation", recommendation)
+    return recommendation2
