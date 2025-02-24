@@ -1,9 +1,21 @@
 var checkout = {};
 
+function getSessionId() {
+  let sessionId = localStorage.getItem('lexSessionId');
+  if (!sessionId) {
+    sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem('lexSessionId', sessionId);
+  }
+  return sessionId;
+}
+
 $(document).ready(function() {
   var $messages = $('.messages-content'),
-    d, h, m,
-    i = 0;
+      d, h, m,
+      i = 0;
 
   $(window).load(function() {
     $messages.mCustomScrollbar();
@@ -18,7 +30,7 @@ $(document).ready(function() {
   }
 
   function setDate() {
-    d = new Date()
+    d = new Date();
     if (m != d.getMinutes()) {
       m = d.getMinutes();
       $('<div class="timestamp">' + d.getHours() + ':' + m + '</div>').appendTo($('.message:last'));
@@ -26,8 +38,9 @@ $(document).ready(function() {
   }
 
   function callChatbotApi(message) {
-    // params, body, additionalParams
+    const sessionId = getSessionId();
     return sdk.chatbotPost({}, {
+      sessionId: sessionId,
       messages: [{
         type: 'unstructured',
         unstructured: {
@@ -66,7 +79,7 @@ $(document).ready(function() {
               insertResponseMessage(message.structured.text);
 
               setTimeout(function() {
-                html = '<img src="' + message.structured.payload.imageUrl + '" witdth="200" height="240" class="thumbnail" /><b>' +
+                html = '<img src="' + message.structured.payload.imageUrl + '" width="200" height="240" class="thumbnail" /><b>' +
                   message.structured.payload.name + '<br>$' +
                   message.structured.payload.price +
                   '</b><br><a href="#" onclick="' + message.structured.payload.clickAction + '()">' +
@@ -96,7 +109,7 @@ $(document).ready(function() {
       insertMessage();
       return false;
     }
-  })
+  });
 
   function insertResponseMessage(content) {
     $('<div class="message loading new"><figure class="avatar"><img src="https://media.tenor.com/images/4c347ea7198af12fd0a66790515f958f/tenor.gif" /></figure><span></span></div>').appendTo($('.mCSB_container'));
@@ -110,5 +123,4 @@ $(document).ready(function() {
       i++;
     }, 500);
   }
-
 });
